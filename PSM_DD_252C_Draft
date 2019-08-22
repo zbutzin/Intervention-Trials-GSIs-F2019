@@ -1,0 +1,146 @@
+---
+title: "PSM and DD"
+author: "Zachary Butzin-Dozier"
+date: "7/10/2019"
+output: pdf_document
+---
+*Warning: Fictional Scenario*
+
+Uh oh – you just learned that local government officials did not appropriately randomize clusters to receive different arms of the intervention. Government officials assigned villages that voted for them to receive the treatment arms, and assigned villages that voted against them to receive no treatment (or less expensive treatments. 
+
+This violates the principle of exchangeability, as we cannot assume that all of the groups are comparable in factors other than treatment. For example – all of the treatment groups (who voted for the party in power) may be high income, while all of the control groups may be low income. Differences between the groups may be due to income level, rather than the intervention.
+
+How can we salvage these data to draw meaningful conclusions?
+
+###1.	Propensity score matching. 
+We can match villages that received treatment to villages that did not receive treatment, but had a similar likelihood of receiving treatment based on an index of observable characteristics
+
+SEARCH ANTHRO DOCUMENT TO DETERMINE psmatch characteristics
+
+Steps of propensity score matching (Applied Impact Evaluation – Human Development Network)
+1.	Representative and highly comparable survey of non-participants and participants
+2.	Pool the two samples and estimate a logit (or probit) model of participation
+3.	Restrict samples to assure common support (important source of bias in observational studies)
+4.	For each participant (or cluster), find a sample of non-participants with similar propensity scores
+5.	Compare the outcome indicators. The difference is the estimate of the gain due to the program for that observation
+6.	Calculate the mean of these individual gains to obtain the average overall gain
+
+```{r}
+#load packages and data
+library(MatchIt)
+library(ggplot2)
+library(dplyr)
+diar <- read.csv("washb-bangladesh-diar-public.csv")
+enrol <- read.csv("washb-bangladesh-enrol-public.csv")
+tr <- read.csv("washb-bangladesh-tr-public.csv")
+```
+
+```{r}
+#MERGE treatment, outcome, and enrollment data frames
+df <- merge(diar, tr, by=c("block","clusterid"), all.x=T, all.y=T)
+df2 <- merge(df, enrol, by="dataid", all.x=T, all.y=T)
+```
+Prior data have indicated that mother's education, father's education, food security category, and community wealth level are highly correlated with a treatment assignment.
+```{r}
+#Select variables of interest 
+df3 <- df2 %>%
+  select(tr, diar7d, momedu, dadeduy, hfiacat, latown) 
+  
+
+#Remove missing data. Note: this assumes that data are missing at random, meaning that there is no systematic difference between those with missing data and those without missing data.
+df3 <- df3[complete.cases(df3),]
+```
+
+```{r}
+#Do I need to code Control as 0 and WSH as 1, or is that already embedded in the code?
+cntrl = filter(df3, tr=="Control")
+wsh = filter(df3,tr=="WSH")
+df4 <- rbind(cntrl, wsh)
+head(df4)
+```
+
+```{r}
+#Set seed for reproducability
+set.seed(97)
+
+#Estimate propensity score
+###This is a linear model of (treatment~predictors), right?
+#How to know which treatment group corresponds to which blocks?
+#do indicators need to be binary? 
+pfit <- glm(tr ~ factor(momedu) + factor(dadeduy) + factor(hfiacat) + factor(latown), family="binomial", data = df4)
+df4$ps1 <- predict(pfit, type = "response")
+```
+What do you think is a weakness of matching propensities to treatment based on these criteria?
+
+```{r}
+#Distribution of PS
+#maybe start at end of page 3 instead
+p1 <- data.frame(df4$ps1[df4$tr=="WSH"])
+colnames(p1) <- "ps1"
+p1$type <- 1
+p0 <- data.frame(df4$ps1[df4$tr=="Control"])
+colnames(p0) <- "ps1"
+p0$type <- 0
+
+```
+
+```{r}
+#Plot propensity score to see common support
+plot_df4 <- data.frame(rbind(p1, p0))
+ggplot(data=plot_df4) + geom_histogram(aes(ps1), bins=30, stat = "bin") +
+facet_wrap(~type) + coord_flip() + theme_bw()
+#point out that this is, in fact, randomized data, so it makes sense that there is large common support
+```
+Do you see much common support (overlap in propensity scores)?
+Did you expect this? Why or why not?
+
+```{r}
+#Set seed to ensure reproducability in matching
+#ERROR HERE#####
+set.seed(97)
+mfit <- matchit(tr ~ factor(momedu) + factor(dadeduy) + factor(hfiacat) + factor(latown), data = df4, method = "nearest", discard="both", replace=T)
+summary(mfit)
+```
+```{r}
+#TAKEN DIRECTLY FROM SOCIAL EPI
+# simplest approach to analysis after propensity matching is to take means of each group – matchit uses weights to represent individuals who have been selected multiple times into a comparison group, so need to take weighted means
+
+m_df %>%
+group_by(medincHL) %>%
+dplyr::summarize(Mean = weighted.mean(binge, weights, na.rm=TRUE))
+
+```
+
+#Difference in Difference
+*A hypothetical within a hypothetical*
+After conducting the graph of propensity scores in the treated and untreated groups, you realize that there is very little common support. To conduct PSM, you need to have common support, indicating that a portion of the control group has similar propensities of being treated as those in the treatment group. 
+
+```{r}
+#create graph showing low/no common support
+```
+
+We can still use difference in difference!
+
+With difference in difference, you can compare the treatment group to a control group with different characteristics, as long as the two groups demonstrate *parallel trends*. A parallel trend means that both groups were changing at similar rates prior to the intervention. 
+
+Let's see if this is the case with the WASH treatment and control groups
+```{r}
+#graph of treatment and control pre intervention
+#indicate whether there seem to be parallel trends
+```
+
+```{r}
+#graph including all 3 times points
+#show impact
+```
+Just subtract twice!
+$$impact = (A-B)-(C-D)$$
+This is one of the most mathematically simple methods that we will cover
+```{r}
+#table showing the pre and post and enrolled nonenrolled
+a = mean(pre_control)
+b = mean(post_control)
+c = mean(pre_treat)
+d = mean(post_treat)
+diff.in.diff = (a - b) - (c - d)
+```
