@@ -4,13 +4,16 @@ author: "Zachary Butzin-Dozier"
 date: "7/30/2019"
 output: pdf_document
 ---
-Adapted from material created by Jade Benjamin-Chung
-
+Adapted from materials originally created by Dr. Jade Benjamin-Chung
 
 ```{r}
 # Load the dplyr package
 library(dplyr)
 ```
+#Downloading, merging, and subsetting the WASH Benefits data
+
+Note: do not be alarmed if the code below is overwhelming. We have merged and subsetted the data for you, but we want to make the code available for you to reference in the future.
+
 Data analysis exercises in this course use data from the WASH Benefits Bangladesh trial. The trial assessed whether water, sanitation, handwashing, and nutrition interventions delivered separately or together could reduce child diarrhea and/or improve child growth. The trials used a cluster- and block-randomized design. Within each geographic block, 8 village clusters were randomized to a treatment or conrtol arm. See Luby et al. 2018 for full details (doi: http://dx.doi.org/10.1016/)
 
 In this first exercise we will calculate the prevalence of diarrhea in different treatment arms after the interventions were delivered. 
@@ -33,6 +36,8 @@ d_tr = left_join(d, tr, by=c("block","clusterid"))
 
 Now let's filter to only keep the rows for diarrhea measurements after the interventions were delivered.The svy variable includes values 0, 1, 2. We are going to drop the 0 values, which indicate the time period before interventions were delivered. 
 ```{r}
+#Note: in R, "!" means "not". In English, the code below means "Filter d_tr to include values where svy is not equal to 0"
+#The %>% is the pipe command, which we use to perform multiple operations on a datset
 d_tr = d_tr %>% filter(svy!=0)
 ```
 
@@ -43,11 +48,7 @@ d_tr = d_tr %>% filter(!is.na(diar7d))
 head(d_tr)
 ```
 
-```{r}
-# Load okR autograder
-devtools::source_gist(id='f3e5c050f617990f4f255d1aada0f396', filename='hw_prev.ok.R', quiet = TRUE)
-AutograderInit()
-```
+#Questions
 
 To count the number of people with the disease, the code below uses the pipe operator %>% to perform an operation on the dataframe df. The pipe operator allows us to run a series of actions on our data.frame df. The pipe separates each action, and these actions are established using functions (filter and summarise below) that are like verbs in a sentence.
 
@@ -56,29 +57,41 @@ First, we filter the dataframe to only include rows where diar7d==1. Then the ne
 In general, it is a good practice to keep your code tidy and organized. This makes it easier to read and understand and also easier to catch mistakes. One way to keep your code tidy is to use a line break after each pipe. Click the check button to run the code.
 
 ```{r}
-#Calculate the number of children withdiarrhea across all children in the dataset (ie., not stratifing by the treatment variable). Use the variable diar7d for diarrhea. Save your result in an object called p1. Label the result inside p1 as n_with_diarrhea
-p1 = d_tr %>%
+#Calculate the number of children with diarrhea across all children in the dataset (ie., not stratifing by the treatment variable). Use the variable diar7d for diarrhea. Save your result in an object called p1. Label the result inside p1 as n_with_diarrhea
+ndiar = d_tr %>%
   filter(diar7d==1) %>%
   summarise(n_with_diarrhea=n())
-p1
+ndiar
 ```
-Problem 1: Calculate the number of children without diarrhea across all children in the dataset (ie., not stratifing by the treatment variable). Use the variable diar7d for diarrhea. Save your result in an object called p2.  Label the result inside p1 as n_without_diarrhea
+Problem 1: Calculate the number of children without diarrhea across all children in the dataset (ie., not stratifing by the treatment variable). Use the variable diar7d for diarrhea. Save your result in an object called p1.  Label the result inside p1 as n_without_diarrhea
 ```{r}
-p2 = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
-p2
+p1 = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
 
-# Check your answer
-CheckProblem2()
 ```
 ```{r}
-# Problem 3: Calculate diarrhea prevalence in the whole dataset (ignoring treatment arm) and save it in an object called prevalence.
+#We can use R to calculate prevalence in a dataframe. Below, we will calculate the prevalence of bruising in our dataset
+#Note: we need to filter to remove NA values for bruising
+pbruise = d_tr %>%
+  filter(!is.na(bruise7d)) %>%
+  summarise(mean(bruise7d))
+pbruise
+```
+
+```{r}
+# Problem 2: Calculate diarrhea prevalence in the whole dataset (ignoring treatment arm) and save it in an object called prevalence.
 
 prevalence = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
 
-# Check your answer
-CheckProblem3()
 ```
-Problem 4: Now let's get counts of whether children did or did not have diarrhea in each treatment arm. In the tutorial, this created a 2x2 table for us. Here, since the WASH Benefits trial, there were 7 different arms (6 intervention + control) create a data frame with 14 rows (two for each arm). The first column is called "tr" for treatment. The second column is called "diar7d" and includes 0 for children without diarrhea and 1 for children with diarrhea. The third column is called "n" and includes the number of children with or without diarrhea in that arm. 
+We can use R to create tables based on counts in our data. In epidemiology, we often create 2X2 tables based on binary exposure and binary outcome. Below, we have written code with 3 columns. The first column describes treatment, the second column The second column is called "bruise7d" and includes 0 for children without bruising and 1 for children with bruising. The third column is called "n" and includes the number of children with or without bruising in that arm. 
+```{r}
+bruise_tr_table = d_tr %>%
+  group_by(tr, bruise7d) %>%
+  summarise(n=n())
+bruise_tr_table
+```
+
+Problem 3: Now let's get counts of whether children did or did not have diarrhea in each treatment arm. Since the WASH Benefits trial, there were 7 different arms (6 intervention + control) create a data frame with 14 rows (two for each arm). The first column is called "tr" for treatment. The second column is called "diar7d" and includes 0 for children without diarrhea and 1 for children with diarrhea. The third column is called "n" and includes the number of children with or without diarrhea in that arm.
 ```{r}
 # Hint: the row for Control with no diarrhea should be this: 
 # tr              diar7d     n
@@ -87,151 +100,71 @@ Problem 4: Now let's get counts of whether children did or did not have diarrhea
 diar_tr_table = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
 diar_tr_table
 
-# Check your answer
-CheckProblem4()
 ```
 
 
-Problem 5: Calculate the diarrhea prevalence in each treatment arm. You will need to combine
-different commands used in this problem set to calculate this. Save the results in an object
-called prevalence_tr. It should have 7 rows (one for each treatment) and two columns. The first 
-column should be for the treatment name and the second should be for the prevalence. 
+Problem 4: Calculate the diarrhea prevalence in each treatment arm. You will need to combine different commands used in this problem set to calculate this. Save the results in an object called prevalence_tr. It should have 7 rows (one for each treatment) and two columns. The first column should be for the treatment name and the second should be for the prevalence. 
 ```{r}
 prevalence_tr = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
 prevalence_tr
 
-# Check your answer
-CheckProblem5()
 ```
 
-Problem 6: Examine the results in prevalence_tr. Which arm had the lowest diarrhea prevalence? Save the name of the treatment arm using the same spelling as in the treatment label in prevalence_tr to indicate your answer in an object called p6. (e.g., p6 = "Control")
+Problem 5: Examine the results in prevalence_tr. Which arm had the lowest diarrhea prevalence? Save the name of the treatment arm using the same spelling as in the treatment label in prevalence_tr to indicate your answer in an object called p6. (e.g., p6 = "Control")
+```{r}
+p5 = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
+
+```
+
+Problem 6: Which treatment arm had prevalence closest to the prevalence in the control arm? Save the name of the treatment arm using the same spelling as in the treatment label in prevalence_tr to indicate your answer in an object called p6. (e.g., p7 = "Control")
 ```{r}
 p6 = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
 
-# Check your answer
-CheckProblem6()
+
 ```
 
-Problem 7: Which treatment arm had prevalence closest to the prevalence in the control arm? Save the name of the treatment arm using the same spelling as in the treatment label in prevalence_tr to indicate your answer in an object called p6. (e.g., p7 = "Control")
-```{r}
-p7 = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
+#cbind and rbind
 
-# Check your answer
-CheckProblem7()
-```
-
-#Incidence - not sure if this is necessary!
-
-# Load okR autograder
-```{r}
-devtools::source_gist(id='7770fec06a23b19595ce8d6997952e04', filename='hw3_inc.ok.R', quiet = TRUE)
-AutograderInit()
-```
-
-In this problem set we will calculate incidence using different formulas. 
+We can use the commands cbind and rbind to merge columns with the same number of rows or columns, respectively. 
 
 ```{r}
-# Read in the data for this assignment. 
-# The data is saved as a .RData file, so you need 
-# to use the load command to load the data. 
-# Fill the R data file name in the quotes below 
-# without the data directory information.
-load(paste0("data/hw3_incidence.RData"))
+#Lets explore how we can merge dataframes using cbind and rbind
+x = c(1,2,3)
+y = c(4,5,6)
+z = c(7,8,9)
 ```
 
-#################################################
-# Section 1: Use the Kaplan-Meier method 
-# to calculate the incidence in the data
-# frame called "km"
-#################################################
-# First, display the data.frame "km"
-km
+```{r}
+#first, let's try cbind
+cxyz = cbind(x,y,z)
+cxyz
+```
 
-#-----------------------------------------------
-# Problem 1: calculate conditional risk as a new 
-# column called "cond_risk" in the km dataframe
-#-----------------------------------------------
-km = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
+```{r}
+#now, let's try again with rbind
+rxyz = rbind(x,y,z)
+rxyz
+```
 
-# Check your answer
-CheckProblem1()
+Below are the scores for 3 highschool cross-country runners in their last 4 mile runs. 
+```{r}
+ryan = c(6,7,7,8)
+sarah = c(6,6,7,8)
+phil = c(7,8,9,9)
 
-#-----------------------------------------------
-# Problem 2: calculate conditional survival as a new 
-# column in the km dataframe called cond_surv
-#-----------------------------------------------
-km = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
+runtimes = rbind(ryan, sarah, phil)
+runtimes
+```
 
-# Check your answer
-CheckProblem2()
+Problem 7: A transfer student, Tyler, just joined the team. Tyler's last 4 run times are listed below. How would you merge Tyler's scores with the rest of the team?
+```{r}
+tyler = c(6,6,6,8)
+runtimes2 = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
+```
+Problem 8: The students all run their next race. Their race times are listed below (ryan first, sarah second, phil third, and tyler fourth). How would you merge these scores with the dataframe runtimes2?
+```{r}
+race5 = c(6,7,5,5)
+runtimes3 = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
+```
 
-#-----------------------------------------------
-# Problem 3: calculate cumulative risk and save it  
-# as a scalar named km_cum_risk
-#-----------------------------------------------
-km_cum_risk = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
-
-# Check your answer
-CheckProblem3()
-
-#-----------------------------------------------
-# Problem 4: calculate cumulative survival and save it
-# as a scalar named km_cum_surv
-#-----------------------------------------------
-km_cum_surv = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
-
-# Check your answer
-CheckProblem4()
-
-#################################################
-# Section 2: Use the Density method 
-# to calculate the incidence in the data
-# frame called "dm"
-#################################################
-# display the data.frame "dm"
-dm
-
-#-----------------------------------------------
-# Problem 5: calculate person-time using a formula that 
-# assumes withdrawals occur halfway through each
-# interval. Withdrawals are indicated in the column "W".
-#-----------------------------------------------
-delta_t=2
-dm = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
-
-# Check your answer
-CheckProblem5()
-
-#-----------------------------------------------
-# Problem 6: calculate the conditional risk as a new 
-# column in the dm dataframe
-#-----------------------------------------------
-dm = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
-
-# Check your answer
-CheckProblem6()
-
-#-----------------------------------------------
-# Problem 7: calculate cumulative risk  and save it  
-# as a scalar named dm_cum_risk
-#-----------------------------------------------
-dm_cum_risk = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
-
-# Check your answer
-CheckProblem7()
-
-#-----------------------------------------------
-# Problem 8: calculate cumulative survival and save it  
-# as a scalar named dm_cum_surv
-#-----------------------------------------------
-dm_cum_surv = "<<<<<<<<<<<<< YOUR CODE HERE >>>>>>>>>>>>>>>"
-
-# Check your answer
-CheckProblem8()
-
-
-# --------------------------------------------
-# Check your total score
-MyTotalScore()
-# --------------------------------------------
 
